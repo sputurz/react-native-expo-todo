@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-export default function StatsScreen() {
+export default function About() {
   const openGitHub = () => {
     Linking.openURL('https://github.com/sputurz/');
   };
