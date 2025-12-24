@@ -1,98 +1,209 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import TaskItem, { Task } from '@/components/task';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  Keyboard,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function Index() {
+  const [task, setTask] = useState<string>('');
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: '1', text: 'Learn React Native', completed: true },
+    { id: '2', text: 'Develop To-Do App', completed: true },
+    { id: '3', text: 'Drink Coffee', completed: false },
+  ]);
 
-export default function HomeScreen() {
+  // Add Task Handler
+  const addTask = (): void => {
+    if (task.trim() === '') return;
+
+    const newTask: Task = {
+      id: Date.now().toString(),
+      text: task,
+      completed: false,
+    };
+
+    setTasks([newTask, ...tasks]);
+    setTask('');
+    Keyboard.dismiss();
+  };
+
+  // Delete Task Handler
+  const deleteTask = (id: string): void => {
+    setTasks(tasks.filter((t) => t.id !== id));
+  };
+
+  // Switch Task Handler
+  const toggleTask = (id: string): void => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  // Counter
+  const completedCount = tasks.filter((t) => t.completed).length;
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>My To-Do List</Text>
+        <Text style={styles.counter}>
+          All: {tasks.length} | Done: {completedCount}
+        </Text>
+      </View>
+
+      {/* Input */}
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="What needs to be done?"
+          value={task}
+          onChangeText={setTask}
+          onSubmitEditing={addTask}
+          returnKeyType="done"
+        />
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={addTask}
+          disabled={!task.trim()}
+        >
+          <Text style={styles.addBtnText}>+</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Task List */}
+      <FlatList
+        data={tasks}
+        renderItem={({ item }) => (
+          <TaskItem task={item} onToggle={toggleTask} onDelete={deleteTask} />
+        )}
+        keyExtractor={(item) => item.id}
+        style={styles.list}
+        contentContainerStyle={tasks.length === 0 && styles.emptyList}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No Tasks!</Text>
+            <Text style={styles.emptySubtext}>Add First Task...</Text>
+          </View>
+        }
+      />
+
+      {/* Clear All */}
+      {tasks.length > 0 && (
+        <TouchableOpacity style={styles.clearBtn} onPress={() => setTasks([])}>
+          <Text style={styles.clearBtnText}>Clear All</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    paddingTop: 50,
+  },
+  header: {
+    backgroundColor: '#6C63FF',
+    padding: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 5,
+  },
+  counter: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  inputRow: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  addBtn: {
+    width: 52,
+    height: 52,
+    backgroundColor: '#6C63FF',
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    shadowColor: '#6C63FF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  addBtnText: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginTop: -3,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  list: {
+    paddingHorizontal: 20,
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  emptyText: {
+    fontSize: 24,
+    color: '#6C63FF',
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: '#999',
+  },
+  clearBtn: {
+    backgroundColor: '#FF5252',
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  clearBtnText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
